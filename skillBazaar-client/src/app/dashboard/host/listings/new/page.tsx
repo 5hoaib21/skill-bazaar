@@ -10,6 +10,7 @@ export default function NewExperiencePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -31,7 +32,8 @@ export default function NewExperiencePage() {
     address: "",
     latitude: 0,
     longitude: 0,
-    images: "",
+    imageFiles: [] as File[],
+    imageUrls: [] as string[],
   });
 
   useEffect(() => {
@@ -64,10 +66,54 @@ export default function NewExperiencePage() {
     }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length + form.imageFiles.length > 5) {
+      setError("Maximum 5 images allowed");
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      imageFiles: [...prev.imageFiles, ...files],
+    }));
+  };
+
+  const removeImage = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      imageFiles: prev.imageFiles.filter((_, i) => i !== index),
+    }));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (form.imageFiles.length === 0) return [];
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of form.imageFiles) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: fd,
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || "Upload failed");
+        urls.push(data.url);
+      }
+      return urls;
+    } catch (err: any) {
+      throw new Error(err.message || "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async (status: "draft" | "published") => {
     setSaving(true);
     setError("");
     try {
+      const imageUrls = await uploadImages();
       const payload = {
         title: form.title,
         shortDescription: form.shortDescription,
@@ -90,7 +136,7 @@ export default function NewExperiencePage() {
           latitude: form.latitude,
           longitude: form.longitude,
         },
-        images: form.images.split("\n").filter(Boolean),
+        images: imageUrls.map((url, i) => ({ url, alt: `${form.title} image ${i + 1}`, isCover: i === 0 })),
         status,
       };
       await api.post("/api/experiences", payload);
@@ -342,9 +388,45 @@ export default function NewExperiencePage() {
         </div>
 
         <div className="border-t border-gray-200 pt-4">
-          <h3 className="font-semibold text-charcoal mb-3">
-            Details (one per line)
-          </h3>
+          <h3 className="font-semibold text-charcoal mb-3">Images (max 5)</h3>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileChange}
+            disabled={form.imageFiles.length >= 5 || uploading}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal file:mr-4 file:px-4 file:py-2 file:border-0 file:text-sm file:font-medium file:bg-deep-teal/10 file:text-deep-teal hover:file:bg-deep-teal/20"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Max 5 images. {form.imageFiles.length}/5 uploaded.
+          </p>
+          {form.imageFiles.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+              {form.imageFiles.map((file, idx) => (
+                <div key={idx} className="relative aspect-square border rounded-lg overflow-hidden">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Preview ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                  {idx === 0 && (
+                    <span className="absolute bottom-1 left-1 bg-deep-teal text-white text-xs px-1.5 py-0.5 rounded">Cover</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-gray-200 pt-4">
+          <h3 className="font-semibold text-charcoal mb-3">Details (one per line)</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-charcoal mb-1">
@@ -382,36 +464,23 @@ export default function NewExperiencePage() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal resize-none"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-charcoal mb-1">
-                Image URLs (one per line)
-              </label>
-              <textarea
-                name="images"
-                value={form.images}
-                onChange={handleChange}
-                rows={4}
-                placeholder="https://example.com/image1.jpg"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal resize-none"
-              />
-            </div>
           </div>
         </div>
 
         <div className="flex gap-3 pt-4 border-t border-gray-200">
           <button
             onClick={() => handleSave("draft")}
-            disabled={saving}
+            disabled={saving || uploading}
             className="px-6 py-2 border border-deep-teal text-deep-teal font-medium rounded-lg hover:bg-deep-teal/5 disabled:opacity-50 transition-colors"
           >
-            {saving ? "Saving..." : "Save as Draft"}
+            {saving || uploading ? "Saving..." : "Save as Draft"}
           </button>
           <button
             onClick={() => handleSave("published")}
-            disabled={saving}
+            disabled={saving || uploading}
             className="px-6 py-2 bg-deep-teal text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? "Saving..." : "Submit for Review"}
+            {saving || uploading ? "Saving..." : "Submit for Review"}
           </button>
         </div>
       </div>

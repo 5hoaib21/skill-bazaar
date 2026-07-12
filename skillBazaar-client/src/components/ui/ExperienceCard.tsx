@@ -82,12 +82,12 @@ export function ExperienceCard({ experience, hostName }: ExperienceCardProps) {
           </div>
 
           <div className="flex items-center gap-1 mt-2">
-            {renderStars(experience.averageRating)}
+            {renderStars(experience.ratingSummary?.average ?? 0)}
             <span className="text-sm text-gray-500 ml-1">
-              {experience.averageRating.toFixed(1)}
+              {experience.ratingSummary?.average?.toFixed(1) ?? "0.0"}
             </span>
             <span className="text-sm text-gray-400 ml-1">
-              ({experience.reviewCount})
+              ({experience.ratingSummary?.count ?? 0})
             </span>
           </div>
         </div>

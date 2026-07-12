@@ -23,13 +23,20 @@ declare global {
 const COOKIE_NAME = "skillbazaar.session_token";
 
 function getSessionToken(req: Request): string | null {
+  console.log("[Auth] Cookies:", req.cookies);
+  console.log("[Auth] Cookie header:", req.headers.cookie);
+  console.log("[Auth] Auth header:", req.headers.authorization);
   if (req.cookies?.[COOKIE_NAME]) {
-    return req.cookies[COOKIE_NAME];
+    const token = req.cookies[COOKIE_NAME];
+    console.log("[Auth] Found cookie token:", token?.substring(0, 20));
+    return token;
   }
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
+    console.log("[Auth] Found Bearer token:", authHeader.substring(7, 27));
     return authHeader.slice(7);
   }
+  console.log("[Auth] No token found");
   return null;
 }
 

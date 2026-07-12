@@ -463,6 +463,9 @@ app.patch("/api/sessions/:id/cancel", requireAuth, async (req, res, next) => {
 // ─── Host Profile ────────────────────────────────────────────────────────────
 app.post("/api/hosts/profile", requireAuth, async (req, res, next) => {
   try {
+    console.log("[DEBUG] POST /api/hosts/profile - body:", req.body);
+    console.log("[DEBUG] POST /api/hosts/profile - user:", req.user);
+    
     const existing = await hostProfilesCollection().findOne({ userId: req.user!.id });
     if (existing) throw new ValidationError("Host profile already exists");
 

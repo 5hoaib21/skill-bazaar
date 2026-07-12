@@ -1,15 +1,33 @@
 import type { ApiResponse } from "@/types";
+import { authClient } from "@/lib/auth-client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const session = await authClient.getSession();
+    if (session.data?.user) {
+      return session.data.session?.token || null;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
 
 async function request<T>(
   method: string,
   path: string,
   body?: unknown
 ): Promise<T> {
+  const token = await getAuthToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   const res = await fetch(`${API_BASE}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
     credentials: "include",
   });

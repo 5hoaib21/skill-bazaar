@@ -44,6 +44,7 @@ export interface Experience {
   status: "draft" | "published" | "rejected" | "archived";
   averageRating: number;
   reviewCount: number;
+  ratingSummary?: { average: number; count: number };
   hostName?: string;
   language?: string;
   createdAt: string;
