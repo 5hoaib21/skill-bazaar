@@ -54,9 +54,16 @@ export async function requireAuth(
       throw new UnauthorizedError("Invalid or expired session");
     }
 
+    const userId =
+      authSession.userId instanceof ObjectId
+        ? authSession.userId
+        : typeof authSession.userId === "string" && ObjectId.isValid(authSession.userId)
+          ? new ObjectId(authSession.userId)
+          : authSession.userId;
+
     const user = await db.collection("user").findOne(
-      { id: authSession.userId },
-      { projection: { id: 1, email: 1, name: 1, emailVerified: 1, image: 1, role: 1 } }
+      { _id: userId },
+      { projection: { _id: 1, email: 1, name: 1, emailVerified: 1, image: 1, role: 1 } }
     );
 
     if (!user) {
@@ -64,7 +71,7 @@ export async function requireAuth(
     }
 
     req.user = {
-      id: user.id,
+      id: user._id.toString(),
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
@@ -111,14 +118,21 @@ export async function optionalAuth(
     });
 
     if (authSession) {
+      const userId =
+        authSession.userId instanceof ObjectId
+          ? authSession.userId
+          : typeof authSession.userId === "string" && ObjectId.isValid(authSession.userId)
+            ? new ObjectId(authSession.userId)
+            : authSession.userId;
+
       const user = await db.collection("user").findOne(
-        { id: authSession.userId },
-        { projection: { id: 1, email: 1, name: 1, emailVerified: 1, image: 1, role: 1 } }
+        { _id: userId },
+        { projection: { _id: 1, email: 1, name: 1, emailVerified: 1, image: 1, role: 1 } }
       );
 
       if (user) {
         req.user = {
-          id: user.id,
+          id: user._id.toString(),
           email: user.email,
           name: user.name,
           emailVerified: user.emailVerified,

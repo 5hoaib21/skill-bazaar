@@ -10,7 +10,7 @@ export interface HostProfile {
   city: string | null;
   phone: string | null;
   profileImageUrl: string | null;
-  verificationStatus: "unverified" | "pending" | "verified" | "rejected";
+  verificationStatus: string;
   stripeAccountId: string | null;
   stripeOnboardingComplete: boolean;
   stripeChargesEnabled: boolean;
@@ -46,13 +46,7 @@ export interface RatingSummary {
   count: number;
 }
 
-export type ExperienceStatus =
-  | "draft"
-  | "pending_review"
-  | "published"
-  | "paused"
-  | "rejected"
-  | "archived";
+export type ExperienceStatus = string;
 
 export interface Experience {
   _id?: ObjectId;
@@ -75,18 +69,14 @@ export interface Experience {
   cancellationPolicyId: string;
   images: ExperienceImage[];
   location: ExperienceLocation;
-  status: ExperienceStatus;
+  status: string;
   moderation: ExperienceModeration;
   ratingSummary: RatingSummary;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type SessionStatus =
-  | "scheduled"
-  | "full"
-  | "cancelled"
-  | "completed";
+export type SessionStatus = string;
 
 export interface Session {
   _id?: ObjectId;
@@ -98,31 +88,19 @@ export interface Session {
   reservedSeats: number;
   confirmedSeats: number;
   bookingCutoffAt: Date;
-  status: SessionStatus;
+  status: string;
   cancelledAt: Date | null;
   cancellationReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type BookingStatus =
-  | "pending_payment"
-  | "confirmed"
-  | "cancelled"
-  | "completed";
-
-export type PaymentStatus =
-  | "unpaid"
-  | "processing"
-  | "paid"
-  | "failed"
-  | "partially_refunded"
-  | "refunded";
-
-export type CancelledBy = "user" | "host" | "admin";
+export type BookingStatus = string;
+export type PaymentStatus = string;
+export type CancelledBy = string;
 
 export interface BookingCancellation {
-  cancelledBy: CancelledBy | null;
+  cancelledBy: string | null;
   reason: string | null;
   cancelledAt: Date | null;
 }
@@ -149,8 +127,8 @@ export interface Booking {
   taxAmount: number;
   totalAmount: number;
   hostEarningAmount: number;
-  bookingStatus: BookingStatus;
-  paymentStatus: PaymentStatus;
+  bookingStatus: string;
+  paymentStatus: string;
   seatHoldExpiresAt: Date | null;
   stripe: BookingStripe;
   cancellation: BookingCancellation;
@@ -158,7 +136,7 @@ export interface Booking {
   updatedAt: Date;
 }
 
-export type ReviewStatus = "published" | "hidden" | "flagged";
+export type ReviewStatus = string;
 
 export interface Review {
   _id?: ObjectId;
@@ -183,26 +161,17 @@ export interface StripeEvent {
   createdAt: Date;
 }
 
-export type ReportTargetType =
-  | "experience"
-  | "host"
-  | "review"
-  | "user";
-
-export type ReportStatus =
-  | "open"
-  | "reviewing"
-  | "resolved"
-  | "dismissed";
+export type ReportTargetType = string;
+export type ReportStatus = string;
 
 export interface Report {
   _id?: ObjectId;
   reporterId: ObjectId;
-  targetType: ReportTargetType;
+  targetType: string;
   targetId: ObjectId;
   reason: string;
   details: string;
-  status: ReportStatus;
+  status: string;
   reviewedBy: ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
