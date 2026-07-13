@@ -1,18 +1,12 @@
 import type { ApiResponse } from "@/types";
-import { authClient } from "@/lib/auth-client";
+import { getSession } from "@/lib/session-store";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-async function getAuthToken(): Promise<string | null> {
-  try {
-    const session = await authClient.getSession();
-    if (session.data?.user) {
-      return session.data.session?.token || null;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
+function getCsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/volunteerconnect\.csrf_token=([^;]+)/);
+  return match ? match[1] : null;
 }
 
 async function request<T>(
@@ -20,11 +14,19 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
-  const token = await getAuthToken();
+  const s = getSession();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+
+  // Send session ID via header so backend can look up the session
+  if (s?.session?.id) {
+    headers["X-Session-ID"] = s.session.id;
   }
+
+  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+    const csrf = getCsrfToken();
+    if (csrf) headers["X-CSRF-Token"] = csrf;
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,

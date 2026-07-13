@@ -1,47 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const apiKey = process.env.NEXT_PUBLIC_IMGBB_KEY;
+    const file = formData.get("file") as File;
+    if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-    if (!file) {
-      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
-    }
-
-    if (!apiKey) {
-      return NextResponse.json({ success: false, error: "Image upload not configured" }, { status: 500 });
-    }
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const buffer = Buffer.from(await file.arrayBuffer());
     const base64 = buffer.toString("base64");
 
-    const imgbbFormData = new FormData();
-    imgbbFormData.append("image", base64);
-    imgbbFormData.append("key", apiKey);
+    const apiKey = process.env.NEXT_PUBLIC_IMGBB_KEY;
+    if (!apiKey) return NextResponse.json({ error: "Upload service not configured" }, { status: 500 });
 
-    const res = await fetch("https://api.imgbb.com/1/upload", {
+    const uploadForm = new FormData();
+    uploadForm.append("image", base64);
+
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
       method: "POST",
-      body: imgbbFormData,
+      body: uploadForm,
     });
 
     const data = await res.json();
+    if (!data.success) return NextResponse.json({ error: "Upload failed" }, { status: 500 });
 
-    if (!data.success) {
-      return NextResponse.json({ success: false, error: data.error?.message || "Upload failed" }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      url: data.data.url,
-      deleteUrl: data.data.delete_url,
-      width: data.data.width,
-      height: data.data.height,
-    });
-  } catch (err: any) {
-    console.error("[Upload Error]", err);
-    return NextResponse.json({ success: false, error: err.message || "Upload failed" }, { status: 500 });
+    return NextResponse.json({ url: data.data.url });
+  } catch {
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

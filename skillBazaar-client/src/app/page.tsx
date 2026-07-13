@@ -1,249 +1,150 @@
 import Link from "next/link";
-import { api } from "@/lib/api";
-import type { Experience } from "@/types";
-import { ExperienceCard } from "@/components/ui/ExperienceCard";
-
-async function getLatestExperiences(): Promise<Experience[]> {
-  try {
-    return await api.get<Experience[]>("/api/experiences?limit=4&sort=newest");
-  } catch {
-    return [];
-  }
-}
 
 const categories = [
-  { name: "Cooking", icon: "🍳", slug: "cooking" },
-  { name: "Music", icon: "🎵", slug: "music" },
-  { name: "Art & Craft", icon: "🎨", slug: "art-craft" },
-  { name: "Fitness", icon: "💪", slug: "fitness" },
-  { name: "Photography", icon: "📷", slug: "photography" },
-  { name: "Languages", icon: "🌍", slug: "languages" },
-  { name: "Technology", icon: "💻", slug: "technology" },
-  { name: "Wellness", icon: "🧘", slug: "wellness" },
+  { name: "Environment", slug: "environment", icon: "leaf", count: "120+", color: "bg-green-100 text-green-700" },
+  { name: "Education", slug: "education", icon: "book", count: "85+", color: "bg-blue-100 text-blue-700" },
+  { name: "Healthcare", slug: "healthcare", icon: "heart", count: "60+", color: "bg-red-100 text-red-700" },
+  { name: "Community", slug: "community", icon: "users", count: "95+", color: "bg-purple-100 text-purple-700" },
+  { name: "Animals", slug: "animals", icon: "paw", count: "40+", color: "bg-amber-100 text-amber-700" },
+  { name: "Technology", slug: "technology", icon: "code", count: "55+", color: "bg-cyan-100 text-cyan-700" },
 ];
 
-function HeroSection() {
-  return (
-    <section className="relative bg-gradient-to-br from-deep-teal/5 via-white to-warm-amber/5 py-20 md:py-28">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-charcoal">
-            Discover Skills and Experiences Near You
-          </h1>
-          <p className="mt-4 text-lg md:text-xl text-charcoal/60 max-w-2xl mx-auto">
-            Find unique local experiences hosted by talented people in your community
-          </p>
-          <form
-            action="/explore"
-            method="GET"
-            className="mt-8 flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto"
-          >
-            <div className="flex-1 relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                name="search"
-                type="text"
-                placeholder="Search experiences..."
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-charcoal/20 bg-white text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-deep-teal/40 focus:border-deep-teal transition-all text-sm"
-              />
-            </div>
-            <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <input
-                name="city"
-                type="text"
-                placeholder="City..."
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-charcoal/20 bg-white text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-deep-teal/40 focus:border-deep-teal transition-all text-sm"
-              />
-            </div>
-            <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <input
-                name="date"
-                type="date"
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-charcoal/20 bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal/40 focus:border-deep-teal transition-all text-sm"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-8 py-3 rounded-lg bg-deep-teal text-white font-medium hover:bg-deep-teal/90 transition-colors text-sm whitespace-nowrap"
-            >
-              Search
-            </button>
-          </form>
-          <div className="mt-6">
-            <Link
-              href="/dashboard/become-a-host"
-              className="inline-flex items-center gap-2 text-sm font-medium text-deep-teal hover:text-deep-teal/80 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Become a Host
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
+const steps = [
+  { step: "1", title: "Browse Opportunities", desc: "Explore volunteer opportunities that match your interests and skills." },
+  { step: "2", title: "Apply to Volunteer", desc: "Submit your application with a message about why you want to help." },
+  { step: "3", title: "Make a Difference", desc: "Get approved, show up, and contribute to causes you care about." },
+];
 
-function PopularCategories() {
-  return (
-    <section className="py-16 md:py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-charcoal">Popular Categories</h2>
-          <p className="mt-2 text-charcoal/60">Explore experiences by category</p>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {categories.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/explore?category=${cat.slug}`}
-              className="flex flex-col items-center p-6 rounded-xl border border-charcoal/10 bg-white hover:border-deep-teal/30 hover:shadow-md transition-all group"
-            >
-              <span className="text-4xl mb-3 group-hover:scale-110 transition-transform">
-                {cat.icon}
-              </span>
-              <span className="font-medium text-charcoal text-sm">{cat.name}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-async function LatestExperiences() {
-  const experiences = await getLatestExperiences();
-
-  return (
-    <section className="py-16 md:py-20 bg-charcoal/[0.02]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-12">
-          <div>
-            <h2 className="text-3xl font-bold text-charcoal">Latest Experiences</h2>
-            <p className="mt-2 text-charcoal/60">Newest experiences added by hosts</p>
-          </div>
-          <Link
-            href="/explore"
-            className="text-sm font-medium text-deep-teal hover:text-deep-teal/80 transition-colors"
-          >
-            View All &rarr;
-          </Link>
-        </div>
-        {experiences.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {experiences.map((exp) => (
-              <ExperienceCard key={exp._id} experience={exp} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-charcoal/40">
-            <p>No experiences available yet. Check back soon!</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks() {
-  const steps = [
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      ),
-      title: "Discover",
-      description: "Browse unique experiences hosted by talented locals in your area.",
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-      ),
-      title: "Book & Pay",
-      description: "Secure your spot with easy booking and secure payment.",
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      title: "Attend & Experience",
-      description: "Show up, learn something new, and make meaningful connections.",
-    },
-  ];
-
-  return (
-    <section className="py-16 md:py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-charcoal">How It Works</h2>
-          <p className="mt-2 text-charcoal/60">Three simple steps to your next experience</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {steps.map((step, i) => (
-            <div key={i} className="text-center">
-              <div className="w-16 h-16 rounded-full bg-deep-teal/10 flex items-center justify-center mx-auto mb-4 text-deep-teal">
-                {step.icon}
-              </div>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-sm font-semibold text-deep-teal">Step {i + 1}</span>
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-2">{step.title}</h3>
-              <p className="text-sm text-charcoal/60 max-w-xs mx-auto">{step.description}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HostCta() {
-  return (
-    <section className="py-16 md:py-20 bg-warm-amber/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-charcoal">
-          Turn Your Skill Into an Experience
-        </h2>
-        <p className="mt-3 text-lg text-charcoal/60 max-w-xl mx-auto">
-          Share your passion, earn money, and build your reputation
-        </p>
-        <div className="mt-8">
-          <Link
-            href="/dashboard/become-a-host"
-            className="inline-flex items-center px-8 py-3.5 rounded-lg bg-warm-amber text-white font-semibold hover:bg-warm-amber/90 transition-colors text-base"
-          >
-            Start Hosting Today
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
+const testimonials = [
+  { name: "Sarah M.", role: "Volunteer", text: "VolunteerConnect made it so easy to find meaningful work in my community. I've met incredible people and learned new skills." },
+  { name: "James L.", role: "Organizer", text: "As a non-profit organizer, this platform helps us find dedicated volunteers quickly. The application process is smooth." },
+  { name: "Priya K.", role: "Volunteer", text: "I was looking for ways to give back after work hours. Found a weekly tutoring program that fits perfectly into my schedule." },
+];
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1">
-      <HeroSection />
-      <PopularCategories />
-      <LatestExperiences />
-      <HowItWorks />
-      <HostCta />
+    <div className="min-h-screen">
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-deep-teal to-teal-800 text-white py-20 sm:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            Make a Difference<br />in Your Community
+          </h1>
+          <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-8">
+            Connect with meaningful volunteer opportunities. Find causes you care about and start making an impact today.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/opportunities" className="px-8 py-3.5 bg-white text-deep-teal font-semibold rounded-xl hover:bg-gray-50 transition-colors text-lg">
+              Browse Opportunities
+            </Link>
+            <Link href="/register" className="px-8 py-3.5 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors text-lg">
+              Sign Up Free
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="py-12 bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { value: "2,500+", label: "Active Volunteers" },
+              { value: "450+", label: "Opportunities" },
+              { value: "120+", label: "Organizations" },
+              { value: "15,000+", label: "Hours Contributed" },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="text-3xl font-bold text-deep-teal">{stat.value}</p>
+                <p className="text-sm text-charcoal/60 mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Categories */}
+      <section className="py-16 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-charcoal mb-3">Explore by Category</h2>
+            <p className="text-charcoal/60">Find opportunities in the cause areas you care about most</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.map((cat) => (
+              <Link key={cat.name} href={`/opportunities?category=${cat.slug}`} className="group bg-white rounded-xl border border-gray-200 p-5 text-center hover:shadow-md hover:border-deep-teal/30 transition-all">
+                <div className={`w-12 h-12 rounded-full ${cat.color} flex items-center justify-center mx-auto mb-3`}>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="font-medium text-charcoal group-hover:text-deep-teal transition-colors">{cat.name}</p>
+                <p className="text-xs text-charcoal/50 mt-1">{cat.count} opportunities</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-charcoal mb-3">How It Works</h2>
+            <p className="text-charcoal/60">Three simple steps to start volunteering</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {steps.map((step) => (
+              <div key={step.step} className="text-center">
+                <div className="w-14 h-14 bg-deep-teal/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-xl font-bold text-deep-teal">{step.step}</span>
+                </div>
+                <h3 className="text-lg font-semibold text-charcoal mb-2">{step.title}</h3>
+                <p className="text-charcoal/60 text-sm">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-16 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-charcoal mb-3">What People Say</h2>
+            <p className="text-charcoal/60">Hear from our volunteers and organizers</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {testimonials.map((t) => (
+              <div key={t.name} className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center gap-1 mb-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-warm-amber" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-charcoal/70 text-sm mb-4">&ldquo;{t.text}&rdquo;</p>
+                <div>
+                  <p className="font-medium text-charcoal text-sm">{t.name}</p>
+                  <p className="text-xs text-charcoal/50">{t.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 sm:py-20 bg-deep-teal text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Make an Impact?</h2>
+          <p className="text-white/80 mb-8 text-lg">Join thousands of volunteers and organizations making a difference.</p>
+          <Link href="/register" className="inline-block px-8 py-3.5 bg-white text-deep-teal font-semibold rounded-xl hover:bg-gray-50 transition-colors text-lg">
+            Get Started Today
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

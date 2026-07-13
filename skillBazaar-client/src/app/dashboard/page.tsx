@@ -1,136 +1,109 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/api";
-import type { Booking } from "@/types";
+import type { DashboardSummary } from "@/types";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
+const COLORS = ["#0d9488", "#f59e0b", "#3b82f6", "#ef4444", "#8b5cf6", "#10b981"];
 
 export default function DashboardPage() {
   const { data: session, isPending } = authClient.useSession();
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!session) return;
-    (async () => {
-      try {
-        const data = await api.get<Booking[]>("/api/bookings/me");
-        setBookings(data);
-      } catch {
-      } finally {
-        setLoading(false);
-      }
-    })();
+    api.get<DashboardSummary>("/api/dashboard/summary")
+      .then(setSummary)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [session]);
 
-  if (isPending) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-deep-teal" />
-      </div>
-    );
+  if (isPending || loading) {
+    return <div className="p-6"><div className="animate-pulse space-y-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}</div></div>;
   }
 
-  const upcoming = bookings.filter(
-    (b) => b.bookingStatus === "confirmed" || b.bookingStatus === "pending_payment"
-  );
-  const completed = bookings.filter((b) => b.bookingStatus === "completed");
+  if (!summary) return <div className="p-6 text-charcoal/50">Could not load dashboard data.</div>;
 
-  const stats = [
-    { label: "Total Bookings", value: bookings.length },
-    { label: "Upcoming Sessions", value: upcoming.length },
-    { label: "Completed", value: completed.length },
+  const cards = [
+    { label: "Total Opportunities", value: summary.totalOpportunities, color: "text-deep-teal" },
+    { label: "Total Applications", value: summary.totalApplications, color: "text-blue-600" },
+    { label: "Pending Applications", value: summary.pendingApplications, color: "text-amber-600" },
+    { label: "Approved", value: summary.approvedApplications, color: "text-green-600" },
+    { label: "Completed", value: summary.completedActivities, color: "text-purple-600" },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold text-charcoal">Dashboard</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm"
-          >
-            <p className="text-3xl font-bold text-deep-teal">{stat.value}</p>
-            <p className="text-sm text-charcoal/60">{stat.label}</p>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {cards.map((c) => (
+          <div key={c.label} className="bg-white rounded-xl border border-gray-200 p-5">
+            <p className="text-sm text-charcoal/50">{c.label}</p>
+            <p className={`text-2xl font-bold mt-1 ${c.color}`}>{c.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link
-          href="/dashboard/bookings"
-          className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-deep-teal transition-colors"
-        >
-          <h3 className="font-semibold text-charcoal">My Bookings</h3>
-          <p className="text-sm text-charcoal/60 mt-1">
-            View and manage all your bookings
-          </p>
-        </Link>
-        <Link
-          href="/dashboard/profile"
-          className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-deep-teal transition-colors"
-        >
-          <h3 className="font-semibold text-charcoal">Profile</h3>
-          <p className="text-sm text-charcoal/60 mt-1">
-            Update your personal information
-          </p>
-        </Link>
-        <Link
-          href="/dashboard/become-a-host"
-          className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-deep-teal transition-colors"
-        >
-          <h3 className="font-semibold text-charcoal">Become a Host</h3>
-          <p className="text-sm text-charcoal/60 mt-1">
-            Create and manage your own experiences
-          </p>
-        </Link>
-        <Link
-          href="/dashboard/host"
-          className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-deep-teal transition-colors"
-        >
-          <h3 className="font-semibold text-charcoal">Host Dashboard</h3>
-          <p className="text-sm text-charcoal/60 mt-1">
-            Manage your listings, sessions, and earnings
-          </p>
-        </Link>
-      </div>
-
-      {!loading && upcoming.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-charcoal mb-3">
-            Upcoming Bookings
-          </h2>
-          <div className="space-y-3">
-            {upcoming.slice(0, 3).map((booking) => (
-              <Link
-                key={booking._id}
-                href={`/dashboard/bookings/${booking._id}`}
-                className="block bg-white p-4 rounded-xl border border-gray-200 hover:border-deep-teal transition-colors"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-charcoal">
-                      {booking.experience?.title || "Experience"}
-                    </p>
-                    <p className="text-sm text-charcoal/60">
-                      {booking.session?.startAt
-                        ? new Date(booking.session.startAt).toLocaleDateString()
-                        : ""}{" "}
-                      - {booking.participantCount} participant(s)
-                    </p>
-                  </div>
-                  <span className="text-sm font-medium text-deep-teal">
-                    {booking.currency || ""} {booking.totalAmount}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Monthly Applications */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="font-semibold text-charcoal mb-4">Monthly Applications</h3>
+          {summary.monthlyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={summary.monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="applications" fill="#0d9488" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-charcoal/40 text-sm text-center py-8">No data yet</p>
+          )}
         </div>
-      )}
+
+        {/* Status Distribution */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="font-semibold text-charcoal mb-4">Application Status</h3>
+          {summary.statusDistribution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie data={summary.statusDistribution} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={80} label={({ status, count }) => `${status}: ${count}`}>
+                  {summary.statusDistribution.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-charcoal/40 text-sm text-center py-8">No data yet</p>
+          )}
+        </div>
+
+        {/* Category Distribution */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="font-semibold text-charcoal mb-4">Opportunities by Category</h3>
+          {summary.categoryDistribution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={summary.categoryDistribution} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis type="number" tick={{ fontSize: 12 }} />
+                <YAxis type="category" dataKey="category" tick={{ fontSize: 12 }} width={100} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-charcoal/40 text-sm text-center py-8">No data yet</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

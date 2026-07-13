@@ -1,5 +1,5 @@
 {
-  "name": "b-13scic-13a-3",
+  "name": "volunteerconnect-client",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,7 +13,8 @@
     "mongodb": "^7.5.0",
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^2.15.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

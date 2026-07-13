@@ -1,7 +1,7 @@
 {
-  "name": "skillbazaar-server",
+  "name": "volunteerconnect-server",
   "version": "1.0.0",
-  "description": "SkillBazaar backend API",
+  "description": "VolunteerConnect backend API",
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -19,8 +19,7 @@
     "express": "^4.21.2",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.12.0",
-    "stripe": "^17.6.0"
+    "mongodb": "^6.12.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.8",

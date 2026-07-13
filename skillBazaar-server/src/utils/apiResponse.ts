@@ -5,7 +5,7 @@ export function sendSuccess<T>(
   res: Response,
   data?: T,
   message?: string,
-  meta?: ApiResponse["meta"],
+  meta?: ApiResponse<any>["meta"],
   statusCode: number = 200
 ): void {
   const response: ApiResponse<T> = {
@@ -23,7 +23,7 @@ export function sendError(
   statusCode: number = 500,
   error?: string
 ): void {
-  const response: ApiResponse = {
+  const response: ApiResponse<any> = {
     success: false,
     message,
     error,

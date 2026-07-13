@@ -1,81 +1,63 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import { Suspense } from "react";
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
-    const { error: err } = await authClient.signIn.email({ email, password });
-    setLoading(false);
-    if (err) {
-      setError(err.message || "Invalid email or password");
-      return;
+    setError("");
+    try {
+      await authClient.signIn.email({ email, password });
+      router.push(callbackUrl);
+    } catch (err: any) {
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
-    router.push("/");
-    router.refresh();
   };
 
   return (
-    <main className="min-h-screen bg-off-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-charcoal text-center mb-2">Welcome Back</h1>
-        <p className="text-gray-500 text-center mb-6">Sign in to your SkillBazaar account</p>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen bg-off-white flex items-center justify-center px-4">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-charcoal">Welcome Back</h1>
+          <p className="text-charcoal/60 mt-1">Sign in to your account</p>
+        </div>
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+          {error && <p className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">{error}</p>}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-charcoal mb-1">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-teal focus:border-transparent"
-              placeholder="you@example.com"
-            />
+            <label className="block text-sm font-medium text-charcoal mb-1">Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-deep-teal focus:outline-none" required />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-charcoal mb-1">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-teal focus:border-transparent"
-              placeholder="Your password"
-            />
+            <label className="block text-sm font-medium text-charcoal mb-1">Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-deep-teal focus:outline-none" required />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-deep-teal text-white py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className="w-full py-3 bg-deep-teal text-white font-semibold rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors">
             {loading ? "Signing in..." : "Sign In"}
           </button>
+          <p className="text-center text-sm text-charcoal/60">
+            Don&apos;t have an account? <Link href="/register" className="text-deep-teal hover:underline font-medium">Sign up</Link>
+          </p>
         </form>
-
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-deep-teal font-medium hover:underline">Register</Link>
-        </p>
       </div>
-    </main>
+    </div>
   );
+}
+
+export default function LoginPage() {
+  return <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-deep-teal" /></div>}><LoginForm /></Suspense>;
 }

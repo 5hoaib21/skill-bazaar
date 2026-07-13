@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
-  const { data: session, isPending } = authClient.useSession();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session } = authClient.useSession();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -15,46 +15,54 @@ export default function Navbar() {
     router.push("/");
   };
 
-  const navLinks = (
-    <>
-      <Link href="/explore" className="hover:text-warm-amber transition-colors">Explore</Link>
-      <Link href="/#how-it-works" className="hover:text-warm-amber transition-colors">How It Works</Link>
-      <Link href="/dashboard/become-a-host" className="hover:text-warm-amber transition-colors">Become a Host</Link>
-    </>
-  );
-
-  const authLinks = session ? (
-    <>
-      <Link href="/dashboard/bookings" className="hover:text-warm-amber transition-colors">My Bookings</Link>
-      <Link href="/dashboard/host" className="hover:text-warm-amber transition-colors">Host Dashboard</Link>
-      <Link href="/dashboard/profile" className="hover:text-warm-amber transition-colors">Profile</Link>
-      <button onClick={handleLogout} className="hover:text-warm-amber transition-colors">Logout</button>
-    </>
-  ) : (
-    <>
-      <Link href="/login" className="hover:text-warm-amber transition-colors">Login</Link>
-      <Link href="/register" className="bg-warm-amber text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">Register</Link>
-    </>
-  );
-
   return (
-    <nav className="sticky top-0 z-50 bg-white shadow-md">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-2xl font-bold text-deep-teal">SkillBazaar</Link>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-deep-teal rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <span className="text-xl font-bold text-charcoal">VolunteerConnect</span>
+          </Link>
 
+          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
-            {navLinks}
-            {!isPending && authLinks}
+            <Link href="/" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors">Home</Link>
+            <Link href="/opportunities" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors">Explore</Link>
+            <Link href="/about" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors">About</Link>
+            <Link href="/contact" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors">Contact</Link>
           </div>
 
-          <button
-            className="md:hidden"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg className="w-6 h-6 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {menuOpen ? (
+          {/* Auth buttons */}
+          <div className="hidden md:flex items-center gap-3">
+            {session?.user ? (
+              <>
+                <Link href="/dashboard" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors">Dashboard</Link>
+                <Link href="/add-opportunity" className="px-4 py-2 bg-deep-teal text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                  Add Opportunity
+                </Link>
+                <button onClick={handleLogout} className="text-sm font-medium text-charcoal/50 hover:text-charcoal transition-colors">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors">Login</Link>
+                <Link href="/register" className="px-4 py-2 bg-deep-teal text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileOpen ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -62,14 +70,29 @@ export default function Navbar() {
             </svg>
           </button>
         </div>
-      </div>
 
-      {menuOpen && (
-        <div className="md:hidden bg-white border-t px-4 pb-4 flex flex-col gap-3 pt-3">
-          {navLinks}
-          {!isPending && authLinks}
-        </div>
-      )}
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="md:hidden py-4 border-t border-gray-100 space-y-3">
+            <Link href="/" className="block text-sm font-medium text-charcoal/70 hover:text-charcoal" onClick={() => setMobileOpen(false)}>Home</Link>
+            <Link href="/opportunities" className="block text-sm font-medium text-charcoal/70 hover:text-charcoal" onClick={() => setMobileOpen(false)}>Explore</Link>
+            <Link href="/about" className="block text-sm font-medium text-charcoal/70 hover:text-charcoal" onClick={() => setMobileOpen(false)}>About</Link>
+            <Link href="/contact" className="block text-sm font-medium text-charcoal/70 hover:text-charcoal" onClick={() => setMobileOpen(false)}>Contact</Link>
+            {session?.user ? (
+              <>
+                <Link href="/dashboard" className="block text-sm font-medium text-charcoal/70 hover:text-charcoal" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                <Link href="/add-opportunity" className="block text-sm font-medium text-deep-teal" onClick={() => setMobileOpen(false)}>Add Opportunity</Link>
+                <button onClick={() => { handleLogout(); setMobileOpen(false); }} className="block text-sm font-medium text-charcoal/50 hover:text-charcoal">Logout</button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="block text-sm font-medium text-charcoal/70 hover:text-charcoal" onClick={() => setMobileOpen(false)}>Login</Link>
+                <Link href="/register" className="block text-sm font-medium text-deep-teal" onClick={() => setMobileOpen(false)}>Sign Up</Link>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </nav>
   );
 }

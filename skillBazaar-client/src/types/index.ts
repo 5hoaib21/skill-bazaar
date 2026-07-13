@@ -1,11 +1,3 @@
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  totalPages: number;
-  page: number;
-  limit: number;
-}
-
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -14,120 +6,54 @@ export interface ApiResponse<T> {
   meta?: { page?: number; limit?: number; total?: number; totalPages?: number };
 }
 
-export interface Location {
-  country: string;
-  city: string;
-  area: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-}
-
-export interface Experience {
+export interface Opportunity {
   _id: string;
-  hostId: string;
+  organizerId: string;
+  organizerName: string;
   title: string;
+  slug: string;
   shortDescription: string;
   fullDescription: string;
-  category: string | Category;
+  category: string;
   tags: string[];
-  durationMinutes: number;
-  pricePerParticipant: number;
-  currency: string;
-  defaultCapacity: number;
-  minimumAge: number;
-  includedItems: string[];
-  participantRequirements: string[];
-  safetyNotes: string[];
-  location: Location;
-  images: string[];
-  status: "draft" | "published" | "rejected" | "archived";
-  averageRating: number;
-  reviewCount: number;
-  ratingSummary?: { average: number; count: number };
-  hostName?: string;
-  language?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Session {
-  _id: string;
-  experienceId: string;
-  hostId: string;
-  startAt: string;
-  endAt: string;
-  capacity: number;
-  reservedSeats: number;
-  confirmedSeats: number;
-  bookingCutoffAt: string;
-  status: "scheduled" | "cancelled" | "completed";
-  cancelledAt: string | null;
-  cancellationReason: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Booking {
-  _id: string;
-  bookingReference: string;
-  userId: string;
-  hostId: string;
-  experienceId: string;
-  sessionId: string;
-  participantCount: number;
-  currency: string;
-  subtotalAmount: number;
-  platformFeeAmount: number;
-  taxAmount: number;
-  totalAmount: number;
-  hostEarningAmount: number;
-  bookingStatus: "pending_payment" | "confirmed" | "cancelled" | "completed";
-  paymentStatus: "unpaid" | "processing" | "paid" | "failed" | "partially_refunded" | "refunded";
-  seatHoldExpiresAt: string | null;
-  stripe: {
-    checkoutSessionId: string | null;
-    paymentIntentId: string | null;
-    chargeId: string | null;
-    refundIds: string[];
-    connectedAccountId: string | null;
-  };
-  cancellation: {
-    cancelledBy: string | null;
-    reason: string | null;
-    cancelledAt: string | null;
-  };
-  session?: Session;
-  experience?: Experience;
-  hostProfile?: HostProfile;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface HostProfile {
-  _id: string;
-  userId: string;
-  displayName: string;
-  bio: string;
   skills: string[];
-  languages: string[];
-  city: string;
-  phone: string;
-  stripeConnectId?: string;
-  stripeOnboardingComplete: boolean;
-  verificationStatus: "unverified" | "verified" | "rejected";
+  responsibilities: string[];
+  benefits: string[];
+  location: {
+    country: string;
+    city: string;
+    area: string;
+    address: string;
+    isRemote: boolean;
+  };
+  images: string[];
+  commitmentType: "one-time" | "ongoing" | "flexible";
+  duration: string;
+  startDate: string;
+  endDate: string | null;
+  deadline: string;
+  spotsAvailable: number;
+  spotsTaken: number;
+  status: "draft" | "published" | "closed" | "archived";
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Review {
+export interface Application {
   _id: string;
-  experienceId: string;
-  userId: string;
-  userName?: string;
-  rating: number;
-  comment: string;
+  opportunityId: string;
+  opportunityTitle: string;
+  volunteerId: string;
+  volunteerName: string;
+  volunteerEmail: string;
+  organizerId: string;
+  message: string;
+  skills: string[];
+  availability: string;
+  status: "pending" | "approved" | "rejected" | "withdrawn" | "completed";
+  reviewedAt: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Category {
@@ -135,15 +61,28 @@ export interface Category {
   name: string;
   slug: string;
   description: string;
+  icon: string;
+  isActive: boolean;
 }
 
-export interface Report {
+export interface Organization {
   _id: string;
-  type: "experience" | "host" | "user";
-  targetId: string;
-  reporterId: string;
-  reason: string;
+  userId: string;
+  name: string;
   description: string;
-  status: "pending" | "reviewing" | "resolved" | "dismissed";
+  website: string;
+  logo: string;
+  verified: boolean;
   createdAt: string;
+}
+
+export interface DashboardSummary {
+  totalOpportunities: number;
+  totalApplications: number;
+  pendingApplications: number;
+  approvedApplications: number;
+  completedActivities: number;
+  monthlyData: { month: string; applications: number }[];
+  statusDistribution: { status: string; count: number }[];
+  categoryDistribution: { category: string; count: number }[];
 }
