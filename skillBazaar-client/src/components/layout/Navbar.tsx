@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: session } = authClient.useSession();
+  console.log('session:',session);
   const router = useRouter();
 
   const handleLogout = async () => {

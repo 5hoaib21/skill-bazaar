@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { Suspense } from "react";
 
 function LoginForm() {
   const [email, setEmail] = useState("");

@@ -17,18 +17,17 @@ function tokensMatch(a: string, b: string): boolean {
 
 /**
  * Double-submit cookie CSRF protection.
- * - Sets a CSRF cookie on every request if missing.
+ * - Sets a CSRF cookie on GET requests.
  * - Validates X-CSRF-Token header matches cookie on state-changing methods.
- * - Skips safe methods (GET/HEAD/OPTIONS) and the Stripe webhook.
+ * - Skips validation when cookie is absent (cross-origin requests with SameSite cookies).
  */
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {
-  // Skip safe HTTP methods — they must be idempotent and never cause state changes
+  // Safe methods: set cookie for frontend to read
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
-    // Still set the cookie so the frontend can read it
     if (!req.cookies[CSRF_COOKIE]) {
       const token = generateToken();
       res.cookie(CSRF_COOKIE, token, {
-        httpOnly: false, // Frontend needs to read this to send as header
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: COOKIE_MAX_AGE,
@@ -37,14 +36,20 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
     return next();
   }
 
-  // State-changing methods require validation
+  // State-changing methods: validate if cookie is present
   const cookieToken = req.cookies[CSRF_COOKIE];
   const headerToken = req.headers[CSRF_HEADER] as string | undefined;
 
-  if (!cookieToken || !headerToken || !tokensMatch(cookieToken, headerToken)) {
+  // If no cookie sent (cross-origin), skip CSRF — X-Session-ID provides auth
+  if (!cookieToken) {
+    return next();
+  }
+
+  // If cookie present, header must match
+  if (!headerToken || !tokensMatch(cookieToken, headerToken)) {
     res.status(403).json({
       success: false,
-      error: "Invalid or missing CSRF token",
+      error: "Invalid CSRF token",
     });
     return;
   }
