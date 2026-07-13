@@ -14,9 +14,8 @@ export default function HostSessionsPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    date: "",
-    startTime: "",
-    endTime: "",
+    startAt: "",
+    endAt: "",
     capacity: 10,
   });
   const [saving, setSaving] = useState(false);
@@ -65,7 +64,7 @@ export default function HostSessionsPage() {
       );
       setSessions((prev) => [...prev, newSession]);
       setShowForm(false);
-      setForm({ date: "", startTime: "", endTime: "", capacity: 10 });
+      setForm({ startAt: "", endAt: "", capacity: 10 });
     } catch (err: any) {
       setError(err.message || "Failed to create session");
     } finally {
@@ -76,10 +75,7 @@ export default function HostSessionsPage() {
   const handleCancelSession = async (sessionId: string) => {
     if (!confirm("Cancel this session?")) return;
     try {
-      await api.patch(
-        `/api/experiences/${selectedExpId}/sessions/${sessionId}`,
-        { status: "cancelled" }
-      );
+      await api.patch(`/api/sessions/${sessionId}/cancel`, {});
       setSessions((prev) =>
         prev.map((s) =>
           s._id === sessionId ? { ...s, status: "cancelled" as const } : s
@@ -88,23 +84,6 @@ export default function HostSessionsPage() {
     } catch (err: any) {
       setError(err.message || "Failed to cancel session");
     }
-  };
-
-  const statusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      scheduled: "bg-deep-teal/10 text-deep-teal",
-      cancelled: "bg-red-100 text-red-600",
-      completed: "bg-green-100 text-green-600",
-    };
-    return (
-      <span
-        className={`px-2 py-1 text-xs font-medium rounded-full ${
-          colors[status] || "bg-gray-100 text-charcoal/60"
-        }`}
-      >
-        {status}
-      </span>
-    );
   };
 
   if (loading) {
@@ -156,16 +135,16 @@ export default function HostSessionsPage() {
               onSubmit={handleAddSession}
               className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4"
             >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-charcoal mb-1">
-                    Date
+                    Start Date & Time
                   </label>
                   <input
-                    type="date"
-                    value={form.date}
+                    type="datetime-local"
+                    value={form.startAt}
                     onChange={(e) =>
-                      setForm({ ...form, date: e.target.value })
+                      setForm({ ...form, startAt: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal"
                     required
@@ -173,27 +152,13 @@ export default function HostSessionsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-charcoal mb-1">
-                    Start Time
+                    End Date & Time
                   </label>
                   <input
-                    type="time"
-                    value={form.startTime}
+                    type="datetime-local"
+                    value={form.endAt}
                     onChange={(e) =>
-                      setForm({ ...form, startTime: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-charcoal mb-1">
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={form.endTime}
-                    onChange={(e) =>
-                      setForm({ ...form, endTime: e.target.value })
+                      setForm({ ...form, endAt: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal"
                     required
@@ -236,38 +201,50 @@ export default function HostSessionsPage() {
                   No sessions for this experience.
                 </p>
               )}
-              {sessions.map((session) => (
-                <div
-                  key={session._id}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-center justify-between gap-4"
-                >
-                  <div>
-                    <p className="font-medium text-charcoal">
-                      {new Date(session.date).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-                    <p className="text-sm text-charcoal/60">
-                      {session.startTime} - {session.endTime} | Capacity:{" "}
-                      {session.remainingSpots}/{session.capacity}
-                    </p>
+              {sessions.map((session) => {
+                const remainingSpots = session.capacity - session.confirmedSeats - session.reservedSeats;
+                return (
+                  <div
+                    key={session._id}
+                    className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-center justify-between gap-4"
+                  >
+                    <div>
+                      <p className="font-medium text-charcoal">
+                        {new Date(session.startAt).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                      <p className="text-sm text-charcoal/60">
+                        {new Date(session.startAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} -{" "}
+                        {new Date(session.endAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} |{" "}
+                        Capacity: {remainingSpots}/{session.capacity} available
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        session.status === "scheduled"
+                          ? "bg-deep-teal/10 text-deep-teal"
+                          : session.status === "cancelled"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-green-100 text-green-600"
+                      }`}>
+                        {session.status}
+                      </span>
+                      {session.status === "scheduled" && (
+                        <button
+                          onClick={() => handleCancelSession(session._id)}
+                          className="text-sm text-red-600 hover:underline"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {statusBadge(session.status)}
-                    {session.status === "scheduled" && (
-                      <button
-                        onClick={() => handleCancelSession(session._id)}
-                        className="text-sm text-red-600 hover:underline"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>

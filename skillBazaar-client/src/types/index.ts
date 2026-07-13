@@ -54,26 +54,49 @@ export interface Experience {
 export interface Session {
   _id: string;
   experienceId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+  hostId: string;
+  startAt: string;
+  endAt: string;
   capacity: number;
-  remainingSpots: number;
+  reservedSeats: number;
+  confirmedSeats: number;
+  bookingCutoffAt: string;
   status: "scheduled" | "cancelled" | "completed";
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Booking {
   _id: string;
-  reference: string;
+  bookingReference: string;
+  userId: string;
+  hostId: string;
   experienceId: string;
   sessionId: string;
-  userId: string;
   participantCount: number;
+  currency: string;
+  subtotalAmount: number;
+  platformFeeAmount: number;
+  taxAmount: number;
   totalAmount: number;
-  platformFee: number;
-  currency?: string;
-  status: "pending" | "confirmed" | "cancelled" | "completed";
-  paymentStatus: "pending" | "paid" | "refunded" | "failed";
+  hostEarningAmount: number;
+  bookingStatus: "pending_payment" | "confirmed" | "cancelled" | "completed";
+  paymentStatus: "unpaid" | "processing" | "paid" | "failed" | "partially_refunded" | "refunded";
+  seatHoldExpiresAt: string | null;
+  stripe: {
+    checkoutSessionId: string | null;
+    paymentIntentId: string | null;
+    chargeId: string | null;
+    refundIds: string[];
+    connectedAccountId: string | null;
+  };
+  cancellation: {
+    cancelledBy: string | null;
+    reason: string | null;
+    cancelledAt: string | null;
+  };
   session?: Session;
   experience?: Experience;
   hostProfile?: HostProfile;

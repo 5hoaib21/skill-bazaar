@@ -33,9 +33,9 @@ export default function DashboardPage() {
   }
 
   const upcoming = bookings.filter(
-    (b) => b.status === "confirmed" || b.status === "pending"
+    (b) => b.bookingStatus === "confirmed" || b.bookingStatus === "pending_payment"
   );
-  const completed = bookings.filter((b) => b.status === "completed");
+  const completed = bookings.filter((b) => b.bookingStatus === "completed");
 
   const stats = [
     { label: "Total Bookings", value: bookings.length },
@@ -116,8 +116,8 @@ export default function DashboardPage() {
                       {booking.experience?.title || "Experience"}
                     </p>
                     <p className="text-sm text-charcoal/60">
-                      {booking.session?.date
-                        ? new Date(booking.session.date).toLocaleDateString()
+                      {booking.session?.startAt
+                        ? new Date(booking.session.startAt).toLocaleDateString()
                         : ""}{" "}
                       - {booking.participantCount} participant(s)
                     </p>

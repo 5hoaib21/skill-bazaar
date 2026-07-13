@@ -24,19 +24,37 @@ export default function AdminDashboardPage() {
       title: "Experiences",
       description: "Moderate and manage all experiences",
       href: "/admin/experiences",
-      count: "Moderate",
+      icon: "Experience",
     },
     {
       title: "Hosts",
       description: "Verify host profiles",
       href: "/admin/hosts",
-      count: "Verify",
+      icon: "Host",
+    },
+    {
+      title: "Users",
+      description: "Manage user accounts",
+      href: "/admin/users",
+      icon: "User",
+    },
+    {
+      title: "Bookings",
+      description: "View all bookings",
+      href: "/admin/bookings",
+      icon: "Booking",
+    },
+    {
+      title: "Categories",
+      description: "Manage experience categories",
+      href: "/admin/categories",
+      icon: "Category",
     },
     {
       title: "Reports",
       description: "Review user reports",
       href: "/admin/reports",
-      count: "Review",
+      icon: "Report",
     },
   ];
 
@@ -47,33 +65,17 @@ export default function AdminDashboardPage() {
           Admin Dashboard
         </h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {sections.map((section) => (
-            <div
-              key={section.href}
-              className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm"
-            >
-              <p className="text-3xl font-bold text-deep-teal">
-                {section.count}
-              </p>
-              <p className="text-sm text-charcoal/60 mt-1">
-                {section.title}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
           {sections.map((section) => (
             <Link
               key={section.href}
               href={section.href}
               className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-deep-teal transition-colors"
             >
-              <h2 className="text-xl font-semibold text-charcoal mb-2">
+              <h2 className="text-lg font-semibold text-charcoal mb-1">
                 {section.title}
               </h2>
-              <p className="text-charcoal/60">{section.description}</p>
+              <p className="text-sm text-charcoal/60">{section.description}</p>
             </Link>
           ))}
         </div>

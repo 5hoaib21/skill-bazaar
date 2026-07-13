@@ -34,6 +34,9 @@ export default function ExperienceDetailPage() {
         setExperience(exp);
         setSessions(sess);
         setReviews(revs);
+
+        // Update document title for SEO
+        document.title = `${exp.title} | SkillBazaar`;
       } catch (err: any) {
         setError(err.message || "Failed to load experience");
       } finally {
@@ -103,7 +106,7 @@ export default function ExperienceDetailPage() {
       : experience.category;
 
   const availableSessions = sessions.filter(
-    (s) => s.status === "scheduled" && s.remainingSpots > 0
+    (s) => s.status === "scheduled" && (s.capacity - s.confirmedSeats - s.reservedSeats) > 0
   );
 
   const renderStars = (rating: number) => {
@@ -310,8 +313,9 @@ export default function ExperienceDetailPage() {
                   <p className="text-charcoal/50">No sessions available yet.</p>
                 )}
                 {sessions.map((s) => {
+                  const remainingSpots = s.capacity - s.confirmedSeats - s.reservedSeats;
                   const isAvailable =
-                    s.status === "scheduled" && s.remainingSpots > 0;
+                    s.status === "scheduled" && remainingSpots > 0;
                   const isSelected = selectedSession === s._id;
                   return (
                     <button
@@ -329,26 +333,26 @@ export default function ExperienceDetailPage() {
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="font-medium text-charcoal">
-                            {new Date(s.date).toLocaleDateString("en-US", {
+                            {new Date(s.startAt).toLocaleDateString("en-US", {
                               weekday: "short",
                               month: "short",
                               day: "numeric",
                             })}
                           </p>
                           <p className="text-sm text-charcoal/60">
-                            {s.startTime} - {s.endTime}
+                            {new Date(s.startAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} - {new Date(s.endAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
                         <div className="text-right">
                           {isAvailable ? (
                             <span
                               className={`text-sm font-medium ${
-                                s.remainingSpots <= 3
+                                remainingSpots <= 3
                                   ? "text-red-500"
                                   : "text-deep-teal"
                               }`}
                             >
-                              {s.remainingSpots} spots left
+                              {remainingSpots} spots left
                             </span>
                           ) : (
                             <span className="text-sm text-charcoal/40">Unavailable</span>
@@ -407,16 +411,19 @@ export default function ExperienceDetailPage() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-charcoal focus:outline-none focus:ring-2 focus:ring-deep-teal"
                 >
                   <option value="">Choose a session</option>
-                  {availableSessions.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {new Date(s.date).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}{" "}
-                      {s.startTime} ({s.remainingSpots} spots)
-                    </option>
-                  ))}
+                  {availableSessions.map((s) => {
+                    const remainingSpots = s.capacity - s.confirmedSeats - s.reservedSeats;
+                    return (
+                      <option key={s._id} value={s._id}>
+                        {new Date(s.startAt).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}{" "}
+                        {new Date(s.startAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} ({remainingSpots} spots)
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

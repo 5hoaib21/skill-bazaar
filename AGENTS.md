@@ -17,6 +17,7 @@
 - No MVC — no controllers/services/repositories layers
 - JWT verification via better-auth session cookie (`skillbazaar.session_token`)
 - Auth middleware queries MongoDB `session` collection for token validation
+- `usePlural: false` for better-auth to avoid collection name conflicts with our `sessions` collection
 
 ### Frontend (`skillBazaar-client/`)
 - Pages under `src/app/` using App Router

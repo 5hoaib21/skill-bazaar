@@ -11,6 +11,7 @@ import { requireAuth, requireAdmin, optionalAuth } from "./middleware/auth";
 import { sendSuccess, sendError } from "./utils/apiResponse";
 import { NotFoundError, ValidationError, ForbiddenError } from "./utils/errors";
 import { stripe as stripeClient } from "./config/stripe";
+import { rateLimiter, strictRateLimiter } from "./middleware/rateLimiter";
 
 function getStripe(): typeof stripeClient {
   if (!stripeClient) {
@@ -216,7 +217,7 @@ app.get("/api/experiences", optionalAuth, async (req, res, next) => {
         startAt: { $gte: new Date(dateStr), $lt: new Date(dateStr + "T23:59:59.999Z") },
         status: "scheduled",
       }).project({ experienceId: 1 }).toArray();
-      const availIds = new Set(availSessions.map((s) => s.experpriseId?.toString()));
+      const availIds = new Set(availSessions.map((s) => s.experienceId?.toString()));
       const filtered = items.filter((e) => availIds.has(e._id!.toString()));
       sendSuccess(res, filtered, undefined, { page: pg, limit: lim, total: filtered.length, totalPages: Math.ceil(filtered.length / lim) });
       return;
@@ -231,7 +232,7 @@ app.get("/api/experiences", optionalAuth, async (req, res, next) => {
 
     const enriched = items.map((exp) => {
       const item = exp as any;
-      const expSessions = futureSessions.filter((s) => s.experprerienceId?.toString() === item._id.toString());
+      const expSessions = futureSessions.filter((s) => s.experienceId?.toString() === item._id.toString());
       const sorted = expSessions.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
       item.nextAvailableDate = sorted[0]?.startAt || null;
       item.availableSessionsCount = sorted.length;
@@ -463,9 +464,6 @@ app.patch("/api/sessions/:id/cancel", requireAuth, async (req, res, next) => {
 // ─── Host Profile ────────────────────────────────────────────────────────────
 app.post("/api/hosts/profile", requireAuth, async (req, res, next) => {
   try {
-    console.log("[DEBUG] POST /api/hosts/profile - body:", req.body);
-    console.log("[DEBUG] POST /api/hosts/profile - user:", req.user);
-    
     const existing = await hostProfilesCollection().findOne({ userId: req.user!.id });
     if (existing) throw new ValidationError("Host profile already exists");
 
@@ -626,12 +624,19 @@ app.post("/api/bookings", requireAuth, async (req, res, next) => {
       { $inc: { reservedSeats: participantCount } }
     );
 
+    // Only use Connect for real Stripe accounts (not demo mock IDs)
+    const isRealStripeAccount = profile.stripeAccountId && profile.stripeAccountId.startsWith("acct_") && !profile.stripeAccountId.startsWith("acct_demo_");
+
     const checkoutSession = await getStripe().checkout.sessions.create({
       line_items: [{ price_data: { currency: exp.currency.toLowerCase(), product_data: { name: exp.title }, unit_amount: exp.pricePerParticipant * 100 }, quantity: participantCount }],
       mode: "payment",
       success_url: `${req.headers.origin}/checkout/success?booking=${ref}`,
       cancel_url: `${req.headers.origin}/checkout/cancelled?booking=${ref}`,
       metadata: { bookingId: result.insertedId.toString(), bookingReference: ref },
+      ...(isRealStripeAccount ? {
+        application_fee_amount: platformFee * 100,
+        transfer_data: { destination: profile.stripeAccountId },
+      } : {}),
     });
 
     await bookingsCollection().updateOne(
@@ -757,12 +762,22 @@ app.post("/api/payments/create-checkout-session", requireAuth, async (req, res, 
     const exp = await experiencesCollection().findOne({ _id: booking.experienceId });
     if (!exp) throw new NotFoundError("Experience");
 
+    const hostProfile = await hostProfilesCollection().findOne({ userId: booking.hostId.toString() });
+    const platformFee = Math.round(booking.subtotalAmount * 0.1);
+
+    // Only use Connect for real Stripe accounts (not demo mock IDs)
+    const isRealStripeAccount = hostProfile?.stripeAccountId && hostProfile.stripeAccountId.startsWith("acct_") && !hostProfile.stripeAccountId.startsWith("acct_demo_");
+
     const session = await getStripe().checkout.sessions.create({
       line_items: [{ price_data: { currency: booking.currency.toLowerCase(), product_data: { name: exp.title }, unit_amount: exp.pricePerParticipant * 100 }, quantity: booking.participantCount }],
       mode: "payment",
       success_url: `${req.headers.origin}/checkout/success?booking=${bookingReference}`,
       cancel_url: `${req.headers.origin}/checkout/cancelled?booking=${bookingReference}`,
       metadata: { bookingId: booking._id!.toString(), bookingReference },
+      ...(isRealStripeAccount ? {
+        application_fee_amount: platformFee * 100,
+        transfer_data: { destination: hostProfile.stripeAccountId },
+      } : {}),
     });
 
     await bookingsCollection().updateOne(
@@ -981,6 +996,37 @@ app.patch("/api/admin/users/:id/status", requireAuth, requireAdmin, async (req, 
   } catch (err) { next(err); }
 });
 
+app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const filter: any = {};
+    if (status === "suspended") filter.banned = true;
+    else if (status === "active") filter.banned = { $ne: true };
+    const pg = Math.max(1, parseInt(page));
+    const lim = Math.min(50, Math.max(1, parseInt(limit)));
+    const [items, total] = await Promise.all([
+      getDB().collection("user").find(filter).project({ name: 1, email: 1, role: 1, banned: 1, createdAt: 1 }).sort({ createdAt: -1 }).skip((pg - 1) * lim).limit(lim).toArray(),
+      getDB().collection("user").countDocuments(filter),
+    ]);
+    sendSuccess(res, items, undefined, { page: pg, limit: lim, total, totalPages: Math.ceil(total / lim) });
+  } catch (err) { next(err); }
+});
+
+app.get("/api/admin/bookings", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const filter: any = {};
+    if (status) filter.bookingStatus = status;
+    const pg = Math.max(1, parseInt(page));
+    const lim = Math.min(50, Math.max(1, parseInt(limit)));
+    const [items, total] = await Promise.all([
+      bookingsCollection().find(filter).sort({ createdAt: -1 }).skip((pg - 1) * lim).limit(lim).toArray(),
+      bookingsCollection().countDocuments(filter),
+    ]);
+    sendSuccess(res, items, undefined, { page: pg, limit: lim, total, totalPages: Math.ceil(total / lim) });
+  } catch (err) { next(err); }
+});
+
 // ─── Reports (User) ──────────────────────────────────────────────────────────
 app.post("/api/reports", requireAuth, async (req, res, next) => {
   try {
@@ -1003,7 +1049,7 @@ app.post("/api/reports", requireAuth, async (req, res, next) => {
 });
 
 // ─── Contact ─────────────────────────────────────────────────────────────────
-app.post("/api/contact", async (req, res, next) => {
+app.post("/api/contact", strictRateLimiter(5, 60 * 1000), async (req, res, next) => {
   try {
     const { name, email, subject, message } = req.body;
     if (!name || !email || !subject || !message) throw new ValidationError("All fields required");
@@ -1062,8 +1108,66 @@ app.get("/api/host/dashboard", requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── Host Payouts ────────────────────────────────────────────────────────────
+app.get("/api/host/payouts", requireAuth, async (req, res, next) => {
+  try {
+    const profile = await hostProfilesCollection().findOne({ userId: req.user!.id });
+    if (!profile?.stripeAccountId) {
+      sendSuccess(res, { payouts: [], connected: false });
+      return;
+    }
+
+    const payouts = await getStripe().payouts.list({
+      limit: 20,
+    }, {
+      stripeAccount: profile.stripeAccountId,
+    });
+
+    sendSuccess(res, {
+      connected: true,
+      accountId: profile.stripeAccountId,
+      payouts: payouts.data.map((p) => ({
+        id: p.id,
+        amount: p.amount / 100,
+        currency: p.currency.toUpperCase(),
+        status: p.status,
+        arrivalDate: new Date(p.arrival_date * 1000),
+        created: new Date(p.created * 1000),
+      })),
+    });
+  } catch (err) { next(err); }
+});
+
 // ─── Error Handler ───────────────────────────────────────────────────────────
 app.use(errorHandler);
+
+// ─── Seat Hold Expiration Cleanup ─────────────────────────────────────────────
+async function cleanupExpiredSeatHolds() {
+  try {
+    const now = new Date();
+    const expiredBookings = await bookingsCollection().find({
+      bookingStatus: "pending_payment",
+      seatHoldExpiresAt: { $lt: now },
+    }).toArray();
+
+    for (const booking of expiredBookings) {
+      await bookingsCollection().updateOne(
+        { _id: booking._id },
+        { $set: { bookingStatus: "cancelled", paymentStatus: "failed", updatedAt: now } }
+      );
+      await sessionsCollection().updateOne(
+        { _id: booking.sessionId },
+        { $inc: { reservedSeats: -booking.participantCount } }
+      );
+    }
+
+    if (expiredBookings.length > 0) {
+      console.log(`[Cleanup] Released ${expiredBookings.length} expired seat holds`);
+    }
+  } catch (err) {
+    console.error("[Cleanup] Error cleaning up expired seat holds:", err);
+  }
+}
 
 async function start() {
   try {
@@ -1084,6 +1188,25 @@ async function start() {
       ];
       await categoriesCollection().insertMany(defaults.map((c) => ({ ...c, isActive: true, createdAt: new Date(), updatedAt: new Date() })));
       console.log("[Seed] Default categories created");
+    }
+
+    // Clean up expired seat holds on startup
+    await cleanupExpiredSeatHolds();
+
+    // Run cleanup every 5 minutes
+    setInterval(cleanupExpiredSeatHolds, 5 * 60 * 1000);
+
+    // Create text search index for experiences
+    try {
+      await experiencesCollection().createIndex(
+        { title: "text", shortDescription: "text", fullDescription: "text", tags: "text" },
+        { name: "experience_text_search" }
+      );
+    } catch (err) {
+      // Index may already exist, ignore duplicate key error
+      if ((err as any).code !== 11000) {
+        console.error("[Index] Error creating text search index:", err);
+      }
     }
 
     app.listen(env.PORT, () => {

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { Booking } from "@/types";
+import { BookingStatusBadge } from "@/components/ui/BookingStatusBadge";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -31,31 +32,17 @@ export default function BookingsPage() {
     try {
       await api.patch(`/api/bookings/${id}/cancel`);
       setBookings((prev) =>
-        prev.map((b) => (b._id === id ? { ...b, status: "cancelled" as const } : b))
+        prev.map((b) =>
+          b._id === id
+            ? { ...b, bookingStatus: "cancelled" as const, paymentStatus: "refunded" as const }
+            : b
+        )
       );
     } catch (err: any) {
       setError(err.message || "Failed to cancel booking");
     } finally {
       setCancellingId(null);
     }
-  };
-
-  const statusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-warm-amber/10 text-warm-amber",
-      confirmed: "bg-deep-teal/10 text-deep-teal",
-      cancelled: "bg-red-100 text-red-600",
-      completed: "bg-green-100 text-green-600",
-    };
-    return (
-      <span
-        className={`px-2 py-1 text-xs font-medium rounded-full ${
-          colors[status] || "bg-gray-100 text-charcoal/60"
-        }`}
-      >
-        {status}
-      </span>
-    );
   };
 
   if (loading) {
@@ -75,7 +62,7 @@ export default function BookingsPage() {
   }
 
   const canCancel = (booking: Booking) =>
-    booking.status === "pending" || booking.status === "confirmed";
+    booking.bookingStatus === "pending_payment" || booking.bookingStatus === "confirmed";
 
   return (
     <div className="space-y-6">
@@ -107,25 +94,17 @@ export default function BookingsPage() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-charcoal truncate">
-                    {booking.experience?.title || "Experience"}
+                    Booking {booking.bookingReference}
                   </p>
                   <p className="text-sm text-charcoal/60">
-                    {booking.session?.date
-                      ? new Date(booking.session.date).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })
-                      : ""}{" "}
-                    - {booking.participantCount} participant(s)
+                    {booking.participantCount} participant(s)
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-semibold text-charcoal">
-                    ${booking.totalAmount}
+                    {booking.currency} {booking.totalAmount.toLocaleString()}
                   </span>
-                  {statusBadge(booking.status)}
+                  <BookingStatusBadge status={booking.bookingStatus} />
                   <svg
                     className={`w-5 h-5 text-charcoal/40 transition-transform ${
                       isExpanded ? "rotate-180" : ""
@@ -149,23 +128,14 @@ export default function BookingsPage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-charcoal/50">Reference</span>
-                      <p className="font-medium text-charcoal">
-                        {booking.reference}
+                      <p className="font-mono font-medium text-charcoal">
+                        {booking.bookingReference}
                       </p>
                     </div>
                     <div>
                       <span className="text-charcoal/50">Payment</span>
                       <p className="font-medium text-charcoal">
-                        {booking.paymentStatus}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-charcoal/50">Session</span>
-                      <p className="font-medium text-charcoal">
-                        {booking.session?.date
-                          ? new Date(booking.session.date).toLocaleDateString()
-                          : ""}{" "}
-                        {booking.session?.startTime}
+                        {booking.paymentStatus.replace(/_/g, " ")}
                       </p>
                     </div>
                     <div>
@@ -175,15 +145,21 @@ export default function BookingsPage() {
                       </p>
                     </div>
                     <div>
-                      <span className="text-charcoal/50">Total</span>
+                      <span className="text-charcoal/50">Subtotal</span>
                       <p className="font-medium text-charcoal">
-                        ${booking.totalAmount}
+                        {booking.currency} {booking.subtotalAmount.toLocaleString()}
                       </p>
                     </div>
                     <div>
                       <span className="text-charcoal/50">Platform Fee</span>
                       <p className="font-medium text-charcoal">
-                        ${booking.platformFee}
+                        {booking.currency} {booking.platformFeeAmount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-charcoal/50">Total</span>
+                      <p className="font-semibold text-charcoal">
+                        {booking.currency} {booking.totalAmount.toLocaleString()}
                       </p>
                     </div>
                   </div>

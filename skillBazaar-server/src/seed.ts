@@ -120,19 +120,22 @@ async function seed() {
   }
 
   const hostDocIds: ObjectId[] = [];
-  for (const hp of hostProfiles) {
+  // Mock Stripe account IDs for demo hosts (test mode)
+  const mockStripeIds = ["acct_demo_maria", "acct_demo_david", "acct_demo_sarah"];
+  for (let i = 0; i < hostProfiles.length; i++) {
+    const hp = hostProfiles[i];
     const res = await db.collection("host_profiles").insertOne({
       ...hp,
-      stripeAccountId: null,
-      stripeOnboardingComplete: false,
-      stripeChargesEnabled: false,
-      stripePayoutsEnabled: false,
+      stripeAccountId: mockStripeIds[i],
+      stripeOnboardingComplete: true,
+      stripeChargesEnabled: true,
+      stripePayoutsEnabled: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
     hostDocIds.push(res.insertedId);
   }
-  console.log("[Seed] Created 3 host profiles");
+  console.log("[Seed] Created 3 host profiles (with mock Stripe accounts)");
 
   // ── Experiences ────────────────────────────────────────────────────
   const hostUserIds = [maria._id.toString(), david._id.toString(), sarah._id.toString()];

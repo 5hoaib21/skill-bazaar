@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { Booking } from "@/types";
+import { BookingStatusBadge } from "@/components/ui/BookingStatusBadge";
 
 export default function BookingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -26,22 +27,16 @@ export default function BookingDetailPage() {
     })();
   }, [params.id]);
 
-  const statusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-warm-amber/10 text-warm-amber",
-      confirmed: "bg-deep-teal/10 text-deep-teal",
-      cancelled: "bg-red-100 text-red-600",
-      completed: "bg-green-100 text-green-600",
-    };
-    return (
-      <span
-        className={`px-3 py-1 text-sm font-medium rounded-full ${
-          colors[status] || "bg-gray-100 text-charcoal/60"
-        }`}
-      >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
+  const handleCancel = async () => {
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    try {
+      await api.patch(`/api/bookings/${params.id}/cancel`);
+      setBooking((prev) =>
+        prev ? { ...prev, bookingStatus: "cancelled", paymentStatus: "refunded" } : prev
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   if (loading) {
@@ -81,7 +76,7 @@ export default function BookingDetailPage() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-charcoal">Booking Details</h1>
-          {statusBadge(booking.status)}
+          <BookingStatusBadge status={booking.bookingStatus} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -89,32 +84,7 @@ export default function BookingDetailPage() {
             <div>
               <span className="text-sm text-charcoal/50">Reference</span>
               <p className="font-mono font-medium text-charcoal">
-                {booking.reference}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-charcoal/50">Experience</span>
-              <p className="font-medium text-charcoal">
-                {booking.experience?.title || "N/A"}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-charcoal/50">Session Date</span>
-              <p className="font-medium text-charcoal">
-                {booking.session?.date
-                  ? new Date(booking.session.date).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : "N/A"}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-charcoal/50">Time</span>
-              <p className="font-medium text-charcoal">
-                {booking.session?.startTime} - {booking.session?.endTime}
+                {booking.bookingReference}
               </p>
             </div>
             <div>
@@ -123,35 +93,33 @@ export default function BookingDetailPage() {
                 {booking.participantCount}
               </p>
             </div>
+            <div>
+              <span className="text-sm text-charcoal/50">Created</span>
+              <p className="font-medium text-charcoal">
+                {new Date(booking.createdAt).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <span className="text-sm text-charcoal/50">Booking Status</span>
-              <p className="font-medium text-charcoal">
-                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-              </p>
-            </div>
-            <div>
               <span className="text-sm text-charcoal/50">Payment Status</span>
               <p className="font-medium text-charcoal">
                 {booking.paymentStatus.charAt(0).toUpperCase() +
-                  booking.paymentStatus.slice(1)}
+                  booking.paymentStatus.slice(1).replace(/_/g, " ")}
               </p>
             </div>
-            {booking.hostProfile && (
+            {booking.cancellation?.cancelledAt && (
               <div>
-                <span className="text-sm text-charcoal/50">Host</span>
-                <p className="font-medium text-charcoal">
-                  {booking.hostProfile.displayName}
-                </p>
-              </div>
-            )}
-            {booking.experience?.location?.address && (
-              <div>
-                <span className="text-sm text-charcoal/50">Location</span>
-                <p className="font-medium text-charcoal">
-                  {booking.experience.location.address}
+                <span className="text-sm text-charcoal/50">Cancelled</span>
+                <p className="font-medium text-red-600">
+                  {new Date(booking.cancellation.cancelledAt).toLocaleDateString()}
+                  {booking.cancellation.reason && ` - ${booking.cancellation.reason}`}
                 </p>
               </div>
             )}
@@ -162,18 +130,26 @@ export default function BookingDetailPage() {
           <h3 className="font-semibold text-charcoal mb-3">Price Breakdown</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-charcoal/70">
-              <span>
-                Price per participant x {booking.participantCount}
-              </span>
-              <span>${(booking.totalAmount - booking.platformFee).toFixed(2)}</span>
+              <span>Subtotal</span>
+              <span>{booking.currency} {booking.subtotalAmount.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-charcoal/70">
               <span>Platform fee</span>
-              <span>${booking.platformFee.toFixed(2)}</span>
+              <span>{booking.currency} {booking.platformFeeAmount.toLocaleString()}</span>
             </div>
+            {booking.taxAmount > 0 && (
+              <div className="flex justify-between text-charcoal/70">
+                <span>Tax</span>
+                <span>{booking.currency} {booking.taxAmount.toLocaleString()}</span>
+              </div>
+            )}
             <div className="flex justify-between font-semibold text-charcoal pt-2 border-t border-gray-200">
               <span>Total</span>
-              <span>${booking.totalAmount.toFixed(2)}</span>
+              <span>{booking.currency} {booking.totalAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-deep-teal">
+              <span>Host earning</span>
+              <span>{booking.currency} {booking.hostEarningAmount.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -186,27 +162,10 @@ export default function BookingDetailPage() {
             Free cancellation up to 48 hours before the session. 50% refund
             between 24-48 hours. No refund within 24 hours of the session.
           </p>
-          {(booking.status === "pending" ||
-            booking.status === "confirmed") && (
+          {(booking.bookingStatus === "pending_payment" ||
+            booking.bookingStatus === "confirmed") && (
             <button
-              onClick={() => {
-                if (
-                  confirm(
-                    "Are you sure you want to cancel this booking?"
-                  )
-                ) {
-                  api
-                    .patch(`/api/bookings/${params.id}/cancel`)
-                    .then(() => {
-                      setBooking((prev) =>
-                        prev
-                          ? { ...prev, status: "cancelled" as const }
-                          : prev
-                      );
-                    })
-                    .catch((err) => setError(err.message));
-                }
-              }}
+              onClick={handleCancel}
               className="mt-3 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
             >
               Cancel Booking
