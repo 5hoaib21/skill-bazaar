@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { useToast } from "@/components/ui/Toast";
 import type { Opportunity } from "@/types";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -12,6 +13,7 @@ export default function OpportunityDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const { showToast } = useToast();
   const [opp, setOpp] = useState<Opportunity | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -38,9 +40,9 @@ export default function OpportunityDetailPage() {
         availability: form.availability,
       });
       setShowApplyForm(false);
-      alert("Application submitted successfully!");
+      showToast("success", "Application submitted successfully!");
     } catch (err: any) {
-      alert(err.message || "Failed to submit application");
+      showToast("error", err.message || "Failed to submit application");
     } finally {
       setApplying(false);
     }

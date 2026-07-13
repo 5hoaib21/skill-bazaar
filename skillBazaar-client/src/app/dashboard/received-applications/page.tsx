@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 import type { Application } from "@/types";
 
 export default function ReceivedApplicationsPage() {
   const { data: session, isPending } = authClient.useSession();
+  const { showToast } = useToast();
   const router = useRouter();
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function ReceivedApplicationsPage() {
         const newStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "completed";
         return { ...a, status: newStatus as any };
       }));
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { showToast("error", err.message); }
   };
 
   const statusColor = (s: string) => {

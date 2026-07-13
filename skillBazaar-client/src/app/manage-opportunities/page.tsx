@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 import type { Opportunity } from "@/types";
 
 export default function ManageOpportunitiesPage() {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
+  const { showToast } = useToast();
   const [opps, setOpps] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +32,8 @@ export default function ManageOpportunitiesPage() {
     try {
       await api.del(`/api/opportunities/${id}`);
       setOpps((prev) => prev.filter((o) => o._id !== id));
-    } catch (err: any) { alert(err.message); }
+      showToast("success", "Opportunity deleted");
+    } catch (err: any) { showToast("error", err.message); }
   };
 
   if (isPending || loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-deep-teal" /></div>;

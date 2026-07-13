@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 import type { Application } from "@/types";
 
 export default function MyApplicationsPage() {
   const { data: session, isPending } = authClient.useSession();
+  const { showToast } = useToast();
   const router = useRouter();
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,8 @@ export default function MyApplicationsPage() {
     try {
       await api.patch(`/api/applications/${id}/withdraw`);
       setApps((prev) => prev.map((a) => a._id === id ? { ...a, status: "withdrawn" as const } : a));
-    } catch (err: any) { alert(err.message); }
+      showToast("success", "Application withdrawn");
+    } catch (err: any) { showToast("error", err.message); }
   };
 
   const statusColor = (s: string) => {
