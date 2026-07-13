@@ -43,6 +43,57 @@ app.get("/api/health", (_req, res) => {
   sendSuccess(res, { status: "ok", timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
 
+// ─── Landing Page Data ────────────────────────────────────────────────────────
+app.get("/api/landing/stats", async (_req, res, next) => {
+  try {
+    const [totalOpportunities, totalApplications, totalOrganizations] = await Promise.all([
+      opportunitiesCollection().countDocuments({ status: "published" }),
+      applicationsCollection().countDocuments(),
+      opportunitiesCollection().distinct("organizerId").then((ids) => ids.length),
+    ]);
+    sendSuccess(res, { totalOpportunities, totalApplications, totalOrganizations, totalVolunteers: totalApplications });
+  } catch (err) { next(err); }
+});
+
+app.get("/api/landing/featured", async (_req, res, next) => {
+  try {
+    const featured = await opportunitiesCollection()
+      .find({ status: "published" })
+      .sort({ spotsTaken: -1 })
+      .limit(4)
+      .toArray();
+    sendSuccess(res, featured);
+  } catch (err) { next(err); }
+});
+
+app.get("/api/landing/urgent", async (_req, res, next) => {
+  try {
+    const now = new Date();
+    const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const urgent = await opportunitiesCollection()
+      .find({
+        status: "published",
+        deadline: { $gte: now.toISOString().split("T")[0], $lte: weekFromNow.toISOString().split("T")[0] },
+      })
+      .sort({ deadline: 1 })
+      .limit(4)
+      .toArray();
+    sendSuccess(res, urgent);
+  } catch (err) { next(err); }
+});
+
+app.get("/api/landing/organizations", async (_req, res, next) => {
+  try {
+    const orgs = await opportunitiesCollection().aggregate([
+      { $match: { status: "published" } },
+      { $group: { _id: "$organizerId", name: { $first: "$organizerName" }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 4 },
+    ]).toArray();
+    sendSuccess(res, orgs);
+  } catch (err) { next(err); }
+});
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 app.get("/api/auth/me", requireAuth, (req, res) => {
   sendSuccess(res, req.user);
