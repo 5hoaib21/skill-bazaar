@@ -1,5 +1,4 @@
 import type { ApiResponse } from "@/types";
-import { getSession } from "@/lib/session-store";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -14,14 +13,9 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
-  const s = getSession();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
 
-  // Send session ID via header so backend can look up the session
-  if (s?.session?.id) {
-    headers["X-Session-ID"] = s.session.id;
-  }
-
+  // CSRF token for state-changing requests
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
     const csrf = getCsrfToken();
     if (csrf) headers["X-CSRF-Token"] = csrf;

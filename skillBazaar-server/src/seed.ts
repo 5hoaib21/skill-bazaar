@@ -8,8 +8,9 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017";
 const DB_NAME = "volunteerconnect";
 
 function hashPassword(password: string): string {
+  const normalized = password.normalize("NFKC");
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.scryptSync(password, salt, 64, { N: 16384, r: 16, p: 1 });
+  const hash = crypto.scryptSync(normalized, salt, 64, { N: 16384, r: 16, p: 1 });
   return `${salt}:${hash.toString("hex")}`;
 }
 
